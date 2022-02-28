@@ -1,0 +1,83 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerHealth : MonoBehaviour
+{
+    [Header("PlayerHealth")]
+    public float startingHealth;
+    [SerializeField] private AudioClip deathSound;
+    [SerializeField] private AudioClip hurtSound;
+    public float currentHealth; //{get; private set;}
+    private Animator animator;
+    private bool dead;
+    public GameOverScreen gameover;
+    private int score;
+
+    [Header("iFrames")]
+    [SerializeField] private float iFramesDuration;
+    [SerializeField] private int numberOfFlashes;
+    private SpriteRenderer spriteRend;
+    private Rigidbody2D body;
+
+    private void Awake()
+    {
+        currentHealth = startingHealth;
+        animator = GetComponent<Animator>();
+        spriteRend = GetComponent<SpriteRenderer>();
+        body = GetComponent<Rigidbody2D>();
+
+        
+    }
+
+    private void Update()
+    {
+        
+    }
+
+    
+
+    public void TakeDamage(float damage)
+    {
+        currentHealth = Mathf.Clamp(currentHealth - damage, 0, startingHealth);
+        if(currentHealth > 0)
+        {
+            SoundManager.instance.PlaySound(hurtSound);
+            animator.SetTrigger("Hurt");
+            StartCoroutine(Invulnerability());
+        }else{
+            if(!dead)
+            {
+                animator.SetTrigger("Die");
+                SoundManager.instance.PlaySound(deathSound);
+                GetComponent<PlayerMovement>().enabled = false;
+                body.constraints = RigidbodyConstraints2D.FreezePositionX;
+                score = Score.instance.score;
+                gameover.Setup(score);
+                dead = true;
+
+            }
+            
+
+        }   
+    }
+    
+    public void AddHealth(float value)
+    {
+        currentHealth = Mathf.Clamp(currentHealth + value, 0, startingHealth);
+    }
+
+    private IEnumerator Invulnerability()
+    {
+        Physics2D.IgnoreLayerCollision(6,7, true);
+        for (int i=0; i < numberOfFlashes; i++)
+        {
+            spriteRend.color = new Color(1,0,0,0.5f);  //setting red flashing color while invulnerability is active
+            yield return new WaitForSeconds(iFramesDuration/(numberOfFlashes *2));
+            spriteRend.color = Color.white;
+            yield return new WaitForSeconds(iFramesDuration/(numberOfFlashes *2));
+        }
+        Physics2D.IgnoreLayerCollision(6,7, false);
+
+    }
+}
